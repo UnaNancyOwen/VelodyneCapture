@@ -71,7 +71,7 @@ namespace velodyne
             #endif
 
             std::thread* thread = nullptr;
-            std::atomic<bool> run = false;
+            std::atomic_bool run = { false };
             std::mutex mutex;
             std::queue<std::vector<Laser>> queue;
 
@@ -314,7 +314,7 @@ namespace velodyne
                 while( socket->is_open() && ioservice.stopped() ){
                     // Receive Packet
                     boost::system::error_code error;
-                    const size_t length = socket->receive_from( boost::asio::buffer( data, std::size( data ) ), sender, 0, error );
+                    const size_t length = socket->receive_from( boost::asio::buffer( data, sizeof( data ) ), sender, 0, error );
                     if( error == boost::asio::error::eof ){
                         break;
                     }

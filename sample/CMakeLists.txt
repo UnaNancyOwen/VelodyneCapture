@@ -1,5 +1,10 @@
 cmake_minimum_required( VERSION 3.6 )
 
+# Require C++11
+set( CMAKE_CXX_STANDARD 11 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
+set( CMAKE_CXX_EXTENSIONS OFF )
+
 # Create Project
 project( sample )
 add_executable( VelodyneCapture VelodyneCapture.h main.cpp )
@@ -8,6 +13,9 @@ add_executable( VelodyneCapture VelodyneCapture.h main.cpp )
 set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "VelodyneCapture" )
 
 # Find Packages
+# Find Package Thread
+find_package( Threads REQUIRED )
+
 # Find Package Boost
 set( BOOST_ROOT "C:/Program Files/boost" )
 set( Boost_USE_STATIC_LIBS ON ) # Static Link Libraries ( libboost_* )
@@ -74,6 +82,7 @@ if( OpenCV_FOUND AND ( PCAP_FOUND OR Boost_FOUND ) )
   link_directories( ${OpenCV_LIB_DIR} )
 
   # Additional Dependencies
+  target_link_libraries( VelodyneCapture ${CMAKE_THREAD_LIBS_INIT} )
   target_link_libraries( VelodyneCapture ${Boost_LIBRARIES} )
   target_link_libraries( VelodyneCapture ${PCAP_LIBRARIES} )
   target_link_libraries( VelodyneCapture ${OpenCV_LIBS} )
