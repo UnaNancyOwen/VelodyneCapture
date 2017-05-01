@@ -26,6 +26,7 @@
 #include <queue>
 #include <vector>
 #include <cassert>
+#include <cstdint>
 #ifdef HAVE_BOOST
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -84,24 +85,24 @@ namespace velodyne
             #pragma pack(push, 1)
             typedef struct LaserReturn
             {
-                unsigned short distance;
-                unsigned char intensity;
+                uint16_t distance;
+                uint8_t intensity;
             } LaserReturn;
             #pragma pack(pop)
 
             struct FiringData
             {
-                unsigned short blockIdentifier;
-                unsigned short rotationalPosition;
+                uint16_t blockIdentifier;
+                uint16_t rotationalPosition;
                 LaserReturn laserReturns[LASER_PER_FIRING];
             };
 
             struct DataPacket
             {
                 FiringData firingData[FIRING_PER_PKT];
-                unsigned int gpsTimestamp;
-                unsigned char mode;
-                unsigned char sensorType;
+                uint32_t gpsTimestamp;
+                uint8_t mode;
+                uint8_t sensorType;
             };
 
         public:
