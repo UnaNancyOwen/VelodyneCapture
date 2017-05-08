@@ -27,6 +27,8 @@
 #include <vector>
 #include <cassert>
 #include <cstdint>
+#include <chrono>
+#include <iomanip>
 #ifdef HAVE_BOOST
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -45,6 +47,7 @@ namespace velodyne
         unsigned short distance;
         unsigned char intensity;
         unsigned char id;
+        long long time;
 
         const bool operator < ( const struct Laser& laser ){
             if( azimuth == laser.azimuth ){
@@ -331,6 +334,11 @@ namespace velodyne
                         continue;
                     }
 
+                    // Retrieve Unix Time ( microseconds )
+                    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+                    const std::chrono::microseconds epoch = std::chrono::duration_cast<std::chrono::microseconds>( now.time_since_epoch() );
+                    const long long unixtime = epoch.count();
+
                     // Convert to DataPacket Structure
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data );
                     assert( packet->sensorType == 0x22 );
@@ -380,6 +388,7 @@ namespace velodyne
                             laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance;
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
+                            laser.time = unixtime;
 
                             lasers.push_back( laser );
 
@@ -415,6 +424,11 @@ namespace velodyne
                     if( ( header->len - 42 ) != 1206 ){
                         continue;
                     }
+
+                    // Retrieve Unix Time ( microseconds )
+                    std::stringstream ss;
+                    ss << header->ts.tv_sec << std::setw( 6 ) << std::left << std::setfill( '0' ) << header->ts.tv_usec;
+                    const long long unixtime = std::stoll( ss.str() );
 
                     // Convert to DataPacket Structure ( Cut Header 42 bytes )
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data + 42 );
@@ -481,6 +495,7 @@ namespace velodyne
                             laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance;
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
+                            laser.time = unixtime;
 
                             lasers.push_back( laser );
 
