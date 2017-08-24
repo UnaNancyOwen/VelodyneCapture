@@ -7,10 +7,10 @@ set( CMAKE_CXX_EXTENSIONS OFF )
 
 # Create Project
 project( sample )
-add_executable( VelodyneCapture VelodyneCapture.h main.cpp )
+add_executable( viewer VelodyneCapture.h main.cpp )
 
 # Set StartUp Project
-set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "VelodyneCapture" )
+set_property( DIRECTORY PROPERTY VS_STARTUP_PROJECT "viewer" )
 
 # Find Packages
 # Find Package Thread
@@ -82,10 +82,10 @@ if( OpenCV_FOUND AND ( PCAP_FOUND OR Boost_FOUND ) )
   link_directories( ${OpenCV_LIB_DIR} )
 
   # Additional Dependencies
-  target_link_libraries( VelodyneCapture ${CMAKE_THREAD_LIBS_INIT} )
-  target_link_libraries( VelodyneCapture ${Boost_LIBRARIES} )
-  target_link_libraries( VelodyneCapture ${PCAP_LIBRARIES} )
-  target_link_libraries( VelodyneCapture ${OpenCV_LIBS} )
+  target_link_libraries( viewer ${CMAKE_THREAD_LIBS_INIT} )
+  target_link_libraries( viewer ${Boost_LIBRARIES} )
+  target_link_libraries( viewer ${PCAP_LIBRARIES} )
+  target_link_libraries( viewer ${OpenCV_LIBS} )
 else()
   message( WARNING "VelodyneCapture need at least either Boost or PCAP." )
 endif()
