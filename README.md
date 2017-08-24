@@ -17,8 +17,17 @@ If capture from PCAP files, VelodyneCapture are requires PCAP.
 Please define <code>HAVE_PCAP</code> in preprocessor.  
 * libpcap ( or WinPCAP )  
 
-<sup>The sample program uses OpenCV Viz module. However, This class doesn't depend on it.<sup>  
 
+Sample
+------
+This repository has two sample programs.  
+* simple  
+  This sample program is displayed data on standard output.  
+  This sample program depends on dependent libraries ( Boost.Asio or libpcap ( or WinPCAP ) ) of VelodyneCapture class.  
+
+* viewer  
+  This sample program is displayed data on point cloud.  
+  This sample program depends on OpenCV Viz module in addition to dependent libraries ( Boost.Asio or libpcap ( or WinPCAP ) ) of VelodyneCapture class.  
 
 License
 -------
