@@ -218,7 +218,8 @@ namespace velodyne
             const bool isOpen()
             {
                 std::lock_guard<std::mutex> lock( mutex );
-                return ( 
+                return (
+                    #if defined( HAVE_BOOST ) || defined( HAVE_PCAP )
                     #ifdef HAVE_BOOST
                     ( socket && socket->is_open() )
                     #endif
@@ -227,6 +228,9 @@ namespace velodyne
                     #endif
                     #ifdef HAVE_PCAP 
                     pcap != nullptr
+                    #endif
+                    #else
+                    false
                     #endif
                 );
             };
