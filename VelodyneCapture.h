@@ -344,8 +344,9 @@ namespace velodyne
                     const long long unixtime = epoch.count();
 
                     // Convert to DataPacket Structure
+                    // Sensor Type 0x21 is HDL-32E, 0x22 is VLP-16
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data );
-                    assert( packet->sensorType == 0x22 );
+                    assert( packet->sensorType == 0x21 || packet->sensorType == 0x22 );
 
                     // Caluculate Interpolated Azimuth
                     double interpolated = 0.0;
@@ -435,8 +436,9 @@ namespace velodyne
                     const long long unixtime = std::stoll( ss.str() );
 
                     // Convert to DataPacket Structure ( Cut Header 42 bytes )
+                    // Sensor Type 0x21 is HDL-32E, 0x22 is VLP-16
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data + 42 );
-                    assert( packet->sensorType == 0x22 );
+                    assert( packet->sensorType == 0x21 || packet->sensorType == 0x22 );
 
                     // Wait This Thread Difference Time
                     if( last_time.tv_sec == 0 )
