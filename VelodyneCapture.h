@@ -315,6 +315,7 @@ namespace velodyne
             {
                 run = true;
                 struct timeval last_time = { 0 };
+                double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
                 unsigned char data[1500];
                 boost::asio::ip::udp::endpoint sender;
@@ -358,7 +359,6 @@ namespace velodyne
                     }
 
                     // Processing Packet
-                    double last_azimuth = 0.0;
                     for( int firing_index = 0; firing_index < FIRING_PER_PKT; firing_index++ ){
                         // Retrieve Firing Data
                         const FiringData firing_data = packet->firingData[firing_index];
@@ -413,6 +413,7 @@ namespace velodyne
             {
                 run = true;
                 struct timeval last_time = { 0 };
+                double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
 
                 while( true ){
@@ -466,7 +467,6 @@ namespace velodyne
                     }
 
                     // Processing Packet
-                    double last_azimuth = 0.0;
                     for( int firing_index = 0; firing_index < FIRING_PER_PKT; firing_index++ ){
                         // Retrieve Firing Data
                         const FiringData firing_data = packet->firingData[firing_index];
