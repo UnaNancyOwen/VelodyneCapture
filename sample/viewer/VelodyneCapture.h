@@ -520,7 +520,7 @@ namespace velodyne
     {
         private:
             static const int MAX_NUM_LASERS = 16;
-            const std::vector<double> lut = { -15.0, 1.0, -13.0, -3, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0 };
+            const std::vector<double> lut = { -15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0 };
 
         public:
             VLP16Capture() : VelodyneCapture()
