@@ -168,6 +168,7 @@ namespace velodyne
                 }
 
                 // Start Capture Thread
+                run = true;
                 thread = new std::thread( std::bind( &VelodyneCapture::captureSensor, this ) );
 
                 return true;
@@ -208,6 +209,7 @@ namespace velodyne
                 this->filename = filename;
 
                 // Start Capture Thread
+                run = true;
                 thread = new std::thread( std::bind( &VelodyneCapture::capturePCAP, this ) );
 
                 return true;
@@ -313,7 +315,6 @@ namespace velodyne
             // Capture Thread from Sensor
             void captureSensor()
             {
-                run = true;
                 struct timeval last_time = { 0 };
                 double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
