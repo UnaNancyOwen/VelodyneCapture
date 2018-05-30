@@ -228,7 +228,7 @@ namespace velodyne
                     #if defined( HAVE_BOOST ) && defined( HAVE_PCAP )
                     ||
                     #endif
-                    #ifdef HAVE_PCAP 
+                    #ifdef HAVE_PCAP
                     pcap != nullptr
                     #endif
                     #else
@@ -249,10 +249,10 @@ namespace velodyne
             void close()
             {
                 std::lock_guard<std::mutex> lock( mutex );
-
+                run = false;
                 // Close Capturte Thread
                 if( thread && thread->joinable() ){
-                    thread->detach();
+                    thread->join();
                     thread->~thread();
                     delete thread;
                     thread = nullptr;
@@ -321,7 +321,7 @@ namespace velodyne
                 unsigned char data[1500];
                 boost::asio::ip::udp::endpoint sender;
 
-                while( socket->is_open() && ioservice.stopped() ){
+                while( socket->is_open() && ioservice.stopped() && run ){
                     // Receive Packet
                     boost::system::error_code error;
                     const size_t length = socket->receive_from( boost::asio::buffer( data, sizeof( data ) ), sender, 0, error );
@@ -417,7 +417,7 @@ namespace velodyne
                 double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
 
-                while( true ){
+                while( run ){
                     // Retrieve Header and Data from PCAP
                     struct pcap_pkthdr* header;
                     const unsigned char* data;
