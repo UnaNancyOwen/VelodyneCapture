@@ -42,6 +42,12 @@ if( PCAP_FOUND )
   set( HAVE_PCAP "-DHAVE_PCAP" )
 endif()
 
+# Use GPS timestamps insead of Unix epoch
+OPTION( HAVE_GPSTIME "Use GPS timestamps instead of Unix " OFF )
+if( HAVE_GPSTIME )
+  add_definitions( -DHAVE_GPSTIME )
+endif()
+
 # Set Properties
 if( PCAP_FOUND OR Boost_FOUND )
   # Additional Include Directories
