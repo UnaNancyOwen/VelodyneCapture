@@ -261,7 +261,6 @@ namespace velodyne
                 #ifdef HAVE_BOOST
                 // Close Socket
                 if( socket && socket->is_open() ){
-                    socket->shutdown( boost::asio::ip::udp::socket::shutdown_both );
                     socket->close();
                     delete socket;
                     socket = nullptr;
