@@ -293,11 +293,11 @@ namespace velodyne
                 // Pop One Rotation Data from Queue
                 if( mutex.try_lock() ){
                     if( !queue.empty() ){
-                        lasers = queue.front();
+                        lasers = std::move( queue.front() );
+                        queue.pop();
                         if( sort ){
                             std::sort( lasers.begin(), lasers.end() );
                         }
-                        queue.pop();
                     }
                     mutex.unlock();
                 }
