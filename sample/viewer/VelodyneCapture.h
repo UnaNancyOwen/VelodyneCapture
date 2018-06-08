@@ -292,11 +292,11 @@ namespace velodyne
                 // Pop One Rotation Data from Queue
                 if( mutex.try_lock() ){
                     if( !queue.empty() ){
-                        lasers = queue.front();
+                        lasers = std::move( queue.front() );
+                        queue.pop();
                         if( sort ){
                             std::sort( lasers.begin(), lasers.end() );
                         }
-                        queue.pop();
                     }
                     mutex.unlock();
                 }
@@ -382,9 +382,9 @@ namespace velodyne
                             if( last_azimuth > azimuth ){
                                 // Push One Rotation Data to Queue
                                 mutex.lock();
-                                queue.push( lasers );
+                                queue.push( std::move( lasers ) );
                                 mutex.unlock();
-                                lasers.clear();
+                                lasers = std::vector<Laser>();
                             }
 
                             Laser laser;
