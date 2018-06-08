@@ -383,9 +383,9 @@ namespace velodyne
                             if( last_azimuth > azimuth ){
                                 // Push One Rotation Data to Queue
                                 mutex.lock();
-                                queue.push( lasers );
+                                queue.push( std::move( lasers ) );
                                 mutex.unlock();
-                                lasers.clear();
+                                lasers = std::vector<Laser>();
                             }
 
                             Laser laser;
