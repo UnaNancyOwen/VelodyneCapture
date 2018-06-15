@@ -311,6 +311,7 @@ namespace velodyne
 
             int getQueueSize()
             {
+                std::lock_guard<std::mutex> lock( mutex );
                 return queue.size();
             }
 
