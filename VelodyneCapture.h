@@ -309,6 +309,12 @@ namespace velodyne
                 retrieve( lasers, false );
             };
 
+            int getQueueSize()
+            {
+                std::lock_guard<std::mutex> lock( mutex );
+                return queue.size();
+            }
+
         private:
             #ifdef HAVE_BOOST
             // Capture Thread from Sensor
@@ -390,7 +396,11 @@ namespace velodyne
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance;
+                            #ifdef USE_MILLIMETERS
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0;
+                            #else
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0 / 10;
+                            #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
                             laser.time = unixtime;
@@ -498,7 +508,11 @@ namespace velodyne
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance;
+                            #ifdef USE_MILLIMETERS
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0;
+                            #else
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0 / 10;
+                            #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
                             laser.time = unixtime;
