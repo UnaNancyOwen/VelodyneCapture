@@ -261,7 +261,6 @@ namespace velodyne
                 #ifdef HAVE_BOOST
                 // Close Socket
                 if( socket && socket->is_open() ){
-                    socket->shutdown( boost::asio::ip::udp::socket::shutdown_both );
                     socket->close();
                     delete socket;
                     socket = nullptr;
@@ -293,11 +292,11 @@ namespace velodyne
                 // Pop One Rotation Data from Queue
                 if( mutex.try_lock() ){
                     if( !queue.empty() ){
-                        lasers = queue.front();
+                        lasers = std::move( queue.front() );
+                        queue.pop();
                         if( sort ){
                             std::sort( lasers.begin(), lasers.end() );
                         }
-                        queue.pop();
                     }
                     mutex.unlock();
                 }
@@ -309,6 +308,12 @@ namespace velodyne
                 // Retrieve Capture Data
                 retrieve( lasers, false );
             };
+
+            int getQueueSize()
+            {
+                std::lock_guard<std::mutex> lock( mutex );
+                return queue.size();
+            }
 
         private:
             #ifdef HAVE_BOOST
@@ -383,15 +388,19 @@ namespace velodyne
                             if( last_azimuth > azimuth ){
                                 // Push One Rotation Data to Queue
                                 mutex.lock();
-                                queue.push( lasers );
+                                queue.push( std::move( lasers ) );
                                 mutex.unlock();
-                                lasers.clear();
+                                lasers = std::vector<Laser>();
                             }
 
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance;
+                            #ifdef USE_MILLIMETERS
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0;
+                            #else
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0 / 10;
+                            #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
                             #ifdef HAVE_GPSTIME
@@ -502,7 +511,11 @@ namespace velodyne
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance;
+                            #ifdef USE_MILLIMETERS
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0;
+                            #else
+                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0 / 10;
+                            #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
                             #ifdef HAVE_GPSTIME
