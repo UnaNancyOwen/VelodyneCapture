@@ -43,9 +43,16 @@ if( PCAP_FOUND )
 endif()
 
 # Use GPS timestamps insead of Unix epoch
+# This is specially useful while reading PCAP files.
 OPTION( HAVE_GPSTIME "Use GPS timestamps instead of Unix " OFF )
 if( HAVE_GPSTIME )
   add_definitions( -DHAVE_GPSTIME )
+endif()
+
+# Use millimeters instead of the default, centimeters.
+OPTION( USE_MILLIMETERS "Use millimeters instead of centimeters " OFF )
+if( USE_MILLIMETERS )
+  add_definitions( -DUSE_MILLIMETERS )
 endif()
 
 # Find Package OpenCV
