@@ -107,8 +107,6 @@ else()
 endif()
 
 set(PCAP_INCLUDE_DIRS ${PCAP_INCLUDE_DIR})
-MESSAGE(${PCAP_LIBRARY_DIR})
-
 set(PCAP_LIBRARY_DIRS ${PCAP_LIBRARY_DIR})
 set(PCAP_LIBRARIES ${PCAP_LIBRARY})
 
@@ -124,6 +122,7 @@ find_package_handle_standard_args(PCAP DEFAULT_MSG
 if(${PCAP_LIBRARY_DIR})
 find_package_handle_standard_args(PCAP_LIBRARY_DIRS)
 endif()
+
 mark_as_advanced(PCAP_INCLUDE_DIRS
                  PCAP_LIBRARY_DIRS
                  PCAP_LIBRARIES)
