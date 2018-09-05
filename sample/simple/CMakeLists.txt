@@ -68,7 +68,6 @@ if( PCAP_FOUND OR Boost_FOUND )
 
   # Additional Library Directories
   link_directories( ${Boost_LIBRARY_DIRS} )
-  link_directories( ${PCAP_LIBRARY_DIRS} )
 
   # Additional Dependencies
   target_link_libraries( simple ${CMAKE_THREAD_LIBS_INIT} )

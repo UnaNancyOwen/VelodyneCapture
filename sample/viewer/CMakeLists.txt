@@ -91,7 +91,6 @@ if( OpenCV_FOUND AND ( PCAP_FOUND OR Boost_FOUND ) )
 
   # Additional Library Directories
   link_directories( ${Boost_LIBRARY_DIRS} )
-  link_directories( ${PCAP_LIBRARY_DIRS} )
   link_directories( ${OpenCV_LIB_DIR} )
 
   # Additional Dependencies
