@@ -403,8 +403,11 @@ namespace velodyne
                             #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
+                            #ifdef HAVE_GPSTIME
+                            laser.time = packet->gpsTimestamp;
+                            #else
                             laser.time = unixtime;
-
+                            #endif
                             lasers.push_back( laser );
 
                             // Update Last Rotation Azimuth
@@ -515,10 +518,12 @@ namespace velodyne
                             #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
+                            #ifdef HAVE_GPSTIME
+                            laser.time = packet->gpsTimestamp;
+                            #else
                             laser.time = unixtime;
-
+                            #endif
                             lasers.push_back( laser );
-
                             // Update Last Rotation Azimuth
                             last_azimuth = azimuth;
                         }

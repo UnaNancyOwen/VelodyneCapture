@@ -42,6 +42,19 @@ if( PCAP_FOUND )
   set( HAVE_PCAP "-DHAVE_PCAP" )
 endif()
 
+# Use GPS timestamps insead of Unix epoch
+# This is specially useful while reading PCAP files.
+OPTION( HAVE_GPSTIME "Use GPS timestamps instead of Unix " OFF )
+if( HAVE_GPSTIME )
+  add_definitions( -DHAVE_GPSTIME )
+endif()
+
+# Use millimeters instead of the default, centimeters.
+OPTION( USE_MILLIMETERS "Use millimeters instead of centimeters " OFF )
+if( USE_MILLIMETERS )
+  add_definitions( -DUSE_MILLIMETERS )
+endif()
+
 # Set Properties
 if( PCAP_FOUND OR Boost_FOUND )
   # Additional Include Directories
@@ -55,7 +68,6 @@ if( PCAP_FOUND OR Boost_FOUND )
 
   # Additional Library Directories
   link_directories( ${Boost_LIBRARY_DIRS} )
-  link_directories( ${PCAP_LIBRARY_DIRS} )
 
   # Additional Dependencies
   target_link_libraries( simple ${CMAKE_THREAD_LIBS_INIT} )

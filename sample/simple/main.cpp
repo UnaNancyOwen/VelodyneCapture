@@ -62,8 +62,8 @@ int main( int argc, char* argv[] )
             std::cout << "id : " << id << "\n";
 
             // Laser TimeStamp ( microseconds )
-            const long long unixtime = laser.time;
-            std::cout << "unixtime : " << unixtime << "\n";
+            const long long timestamp = laser.time;
+            std::cout << "timestamp : " << timestamp << "\n";
 
             /*
             // Laser TimeStamp ( MM/DD/YY hh:mm:ss.ffffff )

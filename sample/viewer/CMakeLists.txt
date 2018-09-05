@@ -42,6 +42,19 @@ if( PCAP_FOUND )
   set( HAVE_PCAP "-DHAVE_PCAP" )
 endif()
 
+# Use GPS timestamps insead of Unix epoch
+# This is specially useful while reading PCAP files.
+OPTION( HAVE_GPSTIME "Use GPS timestamps instead of Unix " OFF )
+if( HAVE_GPSTIME )
+  add_definitions( -DHAVE_GPSTIME )
+endif()
+
+# Use millimeters instead of the default, centimeters.
+OPTION( USE_MILLIMETERS "Use millimeters instead of centimeters " OFF )
+if( USE_MILLIMETERS )
+  add_definitions( -DUSE_MILLIMETERS )
+endif()
+
 # Find Package OpenCV
 set( OpenCV_DIR "C:/Program Files/opencv/build" )
 set( OpenCV_STATIC OFF )
@@ -78,7 +91,6 @@ if( OpenCV_FOUND AND ( PCAP_FOUND OR Boost_FOUND ) )
 
   # Additional Library Directories
   link_directories( ${Boost_LIBRARY_DIRS} )
-  link_directories( ${PCAP_LIBRARY_DIRS} )
   link_directories( ${OpenCV_LIB_DIR} )
 
   # Additional Dependencies
