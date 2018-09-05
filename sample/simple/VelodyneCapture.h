@@ -29,6 +29,8 @@
 #include <cstdint>
 #include <chrono>
 #include <iomanip>
+#include <algorithm>
+#include <functional>
 #ifdef HAVE_BOOST
 #include <boost/asio.hpp>
 #include <boost/property_tree/ptree.hpp>

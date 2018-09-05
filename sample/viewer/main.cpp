@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <algorithm>
 #include <cmath>
 #include <opencv2/opencv.hpp>
 #include <opencv2/viz.hpp>
