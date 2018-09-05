@@ -73,7 +73,7 @@ if( PCAP_FOUND OR Boost_FOUND )
   # Additional Dependencies
   target_link_libraries( simple ${CMAKE_THREAD_LIBS_INIT} )
   target_link_libraries( simple ${Boost_LIBRARIES} )
-  target_link_libraries( simple ${PCAP_LIBRARIES} )
+  target_link_libraries( simple ${PCAP_LIBRARIES})
 else()
   message( WARNING "VelodyneCapture need at least either Boost or PCAP." )
 endif()
