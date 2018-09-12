@@ -426,7 +426,6 @@ namespace velodyne
             // Capture Thread from PCAP
             void capturePCAP()
             {
-                run = true;
                 struct timeval last_time = { 0 };
                 double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
