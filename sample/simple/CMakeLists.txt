@@ -42,6 +42,14 @@ if( PCAP_FOUND )
   set( HAVE_PCAP "-DHAVE_PCAP" )
 endif()
 
+# Disable sleep while reading a pcap
+# Is is useful if you have to parse the result of a pcap faster than real
+# time.
+OPTION( HAVE_FAST_PCAP "Avoid sleeping whilst reading PCAP files " OFF )
+if( HAVE_FAST_PCAP )
+  add_definitions( -DHAVE_FAST_PCAP )
+endif()
+
 # Use GPS timestamps insead of Unix epoch
 # This is specially useful while reading PCAP files.
 OPTION( HAVE_GPSTIME "Use GPS timestamps instead of Unix " OFF )

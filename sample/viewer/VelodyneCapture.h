@@ -311,7 +311,7 @@ namespace velodyne
                 retrieve( lasers, false );
             };
 
-            int getQueueSize()
+            size_t getQueueSize()
             {
                 std::lock_guard<std::mutex> lock( mutex );
                 return queue.size();
@@ -426,7 +426,6 @@ namespace velodyne
             // Capture Thread from PCAP
             void capturePCAP()
             {
-                run = true;
                 struct timeval last_time = { 0 };
                 double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
@@ -469,7 +468,9 @@ namespace velodyne
                     }
 
                     const unsigned long long delay = ( ( header->ts.tv_sec - last_time.tv_sec ) * 1000000 ) + ( header->ts.tv_usec - last_time.tv_usec );
+                    #ifndef HAVE_FAST_PCAP
                     std::this_thread::sleep_for( std::chrono::microseconds( delay ) );
+                    #endif
                     last_time = header->ts;
 
                     // Caluculate Interpolated Azimuth

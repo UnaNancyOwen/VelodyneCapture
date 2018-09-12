@@ -35,6 +35,15 @@ set( CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ${CMAKE_MODULE_PATH} )
 set( PCAP_DIR "C:/Program Files/WpdPack" )
 find_package( PCAP )
 
+# Disable sleep while reading a pcap
+# Is is useful if you have to parse the result of a pcap faster than real
+# time.
+
+OPTION( HAVE_FAST_PCAP "Avoid sleeping whilst reading PCAP files " OFF )
+if( HAVE_FAST_PCAP )
+  add_definitions( -DHAVE_FAST_PCAP )
+endif()
+
 # If Capture from PCAP Files, VelodyneCapture are required PCAP.
 # Please Define HAVE_PCAP in Preprocessor.
 set( HAVE_PCAP )
