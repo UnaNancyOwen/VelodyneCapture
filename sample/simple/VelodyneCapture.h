@@ -396,7 +396,7 @@ namespace velodyne
                                 lasers.clear();
                             }
                             #ifdef NO_EMPTY_RETURNS
-                            if (firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
+                            if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
                               continue;
                             }
                             #endif
@@ -515,7 +515,7 @@ namespace velodyne
                                 lasers.clear();
                             }
                             #ifdef NO_EMPTY_RETURNS
-                            if (firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
+                            if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
                               continue;
                             }
                             #endif
