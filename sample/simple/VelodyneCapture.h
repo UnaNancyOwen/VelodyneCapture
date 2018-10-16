@@ -395,9 +395,11 @@ namespace velodyne
                                 mutex.unlock();
                                 lasers.clear();
                             }
+                            #ifdef NO_EMPTY_RETURNS
                             if (firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
                               continue;
                             }
+                            #endif
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
@@ -512,9 +514,11 @@ namespace velodyne
                                 mutex.unlock();
                                 lasers.clear();
                             }
+                            #ifdef NO_EMPTY_RETURNS
                             if (firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
                               continue;
                             }
+                            #endif
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
