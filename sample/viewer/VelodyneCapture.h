@@ -39,6 +39,7 @@
 #ifdef HAVE_PCAP
 #include <pcap.h>
 #endif
+#define EPSILON 0.001
 
 namespace velodyne
 {
@@ -394,7 +395,11 @@ namespace velodyne
                                 mutex.unlock();
                                 lasers.clear();
                             }
-
+                            #ifdef NO_EMPTY_RETURNS
+                            if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
+                              continue;
+                            }
+                            #endif
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
@@ -411,7 +416,6 @@ namespace velodyne
                             laser.time = unixtime;
                             #endif
                             lasers.push_back( laser );
-
                             // Update Last Rotation Azimuth
                             last_azimuth = azimuth;
                         }
@@ -510,7 +514,11 @@ namespace velodyne
                                 mutex.unlock();
                                 lasers.clear();
                             }
-
+                            #ifdef NO_EMPTY_RETURNS
+                            if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
+                              continue;
+                            }
+                            #endif
                             Laser laser;
                             laser.azimuth = azimuth / 100.0;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
