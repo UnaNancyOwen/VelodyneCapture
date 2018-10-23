@@ -388,6 +388,7 @@ namespace velodyne
                             }
 
                             // Complete Retrieve Capture One Rotation Data
+                            #ifndef PUSH_SINGLE_PACKETS
                             if( last_azimuth > azimuth ){
                                 // Push One Rotation Data to Queue
                                 mutex.lock();
@@ -395,6 +396,7 @@ namespace velodyne
                                 mutex.unlock();
                                 lasers.clear();
                             }
+                            #endif
                             #ifdef NO_EMPTY_RETURNS
                             if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
                               continue;
@@ -420,8 +422,14 @@ namespace velodyne
                             last_azimuth = azimuth;
                         }
                     }
+                    #ifdef PUSH_SINGLE_PACKETS
+                    // Push packet after processing
+                    mutex.lock();
+                    queue.push( std::move( lasers ) );
+                    mutex.unlock();
+                    lasers.clear();
+                    #endif
                 }
-
                 run = false;
             };
             #endif
@@ -507,6 +515,7 @@ namespace velodyne
                             }
 
                             // Complete Retrieve Capture One Rotation Data
+                            #ifndef PUSH_SINGLE_PACKETS
                             if( last_azimuth > azimuth ){
                                 // Push One Rotation Data to Queue
                                 mutex.lock();
@@ -514,6 +523,7 @@ namespace velodyne
                                 mutex.unlock();
                                 lasers.clear();
                             }
+                            #endif
                             #ifdef NO_EMPTY_RETURNS
                             if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
                               continue;
@@ -539,6 +549,14 @@ namespace velodyne
                             last_azimuth = azimuth;
                         }
                     }
+                    #ifdef PUSH_SINGLE_PACKETS
+                    // Push packet after processing
+                    mutex.lock();
+                    std::cout << "singleee!" << std::endl;
+                    queue.push( std::move( lasers ) );
+                    mutex.unlock();
+                    lasers.clear();
+                    #endif
                 }
 
                 run = false;
