@@ -552,7 +552,6 @@ namespace velodyne
                     #ifdef PUSH_SINGLE_PACKETS
                     // Push packet after processing
                     mutex.lock();
-                    std::cout << "singleee!" << std::endl;
                     queue.push( std::move( lasers ) );
                     mutex.unlock();
                     lasers.clear();
