@@ -64,6 +64,13 @@ if( USE_MILLIMETERS )
   add_definitions( -DUSE_MILLIMETERS )
 endif()
 
+# Push data packets as soon as possible, if ndef the drivers push the 
+# whole frame
+OPTION( PUSH_SINGLE_PACKETS  "Push data packets to the stack instead of frames" OFF )
+if( PUSH_SINGLE_PACKETS )
+  add_definitions( -DPUSH_SINGLE_PACKETS )
+endif()
+
 # Don't push null returns to the lases queue
 OPTION( NO_EMPTY_RETURNS "Discard empty returns before pushing them to the laser queue" OFF )
 if( NO_EMPTY_RETURNS )
