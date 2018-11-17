@@ -251,7 +251,6 @@ namespace velodyne
             // Close Capture
             void close()
             {
-                std::lock_guard<std::mutex> lock( mutex );
                 run = false;
                 // Close Capturte Thread
                 if( thread && thread->joinable() ){
@@ -261,6 +260,7 @@ namespace velodyne
                     thread = nullptr;
                 }
 
+                std::lock_guard<std::mutex> lock( mutex );
                 #ifdef HAVE_BOOST
                 // Close Socket
                 if( socket && socket->is_open() ){
