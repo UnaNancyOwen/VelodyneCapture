@@ -47,7 +47,7 @@ namespace velodyne
     {
         double azimuth;
         double vertical;
-        unsigned short distance;
+        float distance;
         unsigned char intensity;
         unsigned char id;
         long long time;
@@ -403,12 +403,12 @@ namespace velodyne
                             }
                             #endif
                             Laser laser;
-                            laser.azimuth = azimuth / 100.0;
+                            laser.azimuth = azimuth / 100.0f;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
                             #ifdef USE_MILLIMETERS
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0;
+                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance ) * 2.0f;
                             #else
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0 / 10;
+                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance ) * 2.0f / 10.0f;
                             #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
@@ -530,12 +530,12 @@ namespace velodyne
                             }
                             #endif
                             Laser laser;
-                            laser.azimuth = azimuth / 100.0;
+                            laser.azimuth = azimuth / 100.0f;
                             laser.vertical = lut[laser_index % MAX_NUM_LASERS];
                             #ifdef USE_MILLIMETERS
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0;
+                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance ) * 2.0f;
                             #else
-                            laser.distance = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance * 2.0 / 10;
+                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance ) * 2.0f / 10.0f;
                             #endif
                             laser.intensity = firing_data.laserReturns[laser_index % MAX_NUM_LASERS].intensity;
                             laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
@@ -557,7 +557,6 @@ namespace velodyne
                     lasers.clear();
                     #endif
                 }
-
                 run = false;
             };
             #endif
