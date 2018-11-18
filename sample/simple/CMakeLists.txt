@@ -73,7 +73,7 @@ endif()
 # Don't push null returns to the lases queue
 OPTION( NO_EMPTY_RETURNS "Discard empty returns before pushing them to the laser queue" OFF )
 if( NO_EMPTY_RETURNS )
-  add_definitions( -DNO_EMTPTY_RETURNS )
+  add_definitions( -DNO_EMPTY_RETURNS )
 endif()
 
 # Set Properties
