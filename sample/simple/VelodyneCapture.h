@@ -328,11 +328,12 @@ namespace velodyne
         private:
           void parseDataPacket( const DataPacket* packet, std::vector<Laser>& lasers, double& last_azimuth )
           {
-              if( packet->sensorType != 0x21 && packet->sensorType != 0x22 )
-                  throw(std::runtime_error("This sensor is not supported"));
-              if( packet->mode != 0x37 && packet->mode != 0x38){
-                  throw(std::runtime_error("Sensor can't be set in dual return mode"));
-              }
+            if( packet->sensorType != 0x21 && packet->sensorType != 0x22 ){
+                throw(std::runtime_error("This sensor is not supported"));
+            }
+            if( packet->mode != 0x37 && packet->mode != 0x38){
+                throw(std::runtime_error("Sensor can't be set in dual return mode"));
+            }
 
               // Retrieve Unix Time ( microseconds )
               const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
@@ -391,9 +392,9 @@ namespace velodyne
                       laser.intensity = firing_data.laserReturns[laser_index].intensity;
                       laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
                       #ifdef HAVE_GPSTIME
-                      laser.time = packet->gpsTimestamp;
+                      laser.time = packet->gpsTimestamp + static_cast<long long>( laser_relative_time );
                       #else
-                      laser.time = unixtime;
+                      laser.time = unixtime + static_cast<long long>( laser_relative_time );
                       #endif
                       lasers.push_back( laser );
                       // Update Last Rotation Azimuth
