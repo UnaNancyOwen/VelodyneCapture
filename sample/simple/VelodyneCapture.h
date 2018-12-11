@@ -84,6 +84,9 @@ namespace velodyne
 
             int MAX_NUM_LASERS;
             std::vector<double> lut;
+            double time_between_firings;
+            double time_half_idle;
+            double time_total_cycle;
 
             static const int LASER_PER_FIRING = 32;
             static const int FIRING_PER_PKT = 12;
@@ -96,13 +99,16 @@ namespace velodyne
             } LaserReturn;
             #pragma pack(pop)
 
+            #pragma pack(push, 1)
             struct FiringData
             {
                 uint16_t blockIdentifier;
                 uint16_t rotationalPosition;
                 LaserReturn laserReturns[LASER_PER_FIRING];
             };
+            #pragma pack(pop)
 
+            #pragma pack(push, 1)
             struct DataPacket
             {
                 FiringData firingData[FIRING_PER_PKT];
@@ -110,6 +116,7 @@ namespace velodyne
                 uint8_t mode;
                 uint8_t sensorType;
             };
+            #pragma pack(pop)
 
         public:
             // Constructor
@@ -319,11 +326,93 @@ namespace velodyne
             }
 
         private:
+          void parseDataPacket( const DataPacket* packet, std::vector<Laser>& lasers, double& last_azimuth )
+          {
+              if( packet->sensorType != 0x21 && packet->sensorType != 0x22 )
+                  throw(std::runtime_error("This sensor is not supported"));
+              if( packet->mode != 0x37 && packet->mode != 0x38){
+                  throw(std::runtime_error("Sensor can't be set in dual return mode"));
+              }
+
+              // Retrieve Unix Time ( microseconds )
+              const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+              const std::chrono::microseconds epoch = std::chrono::duration_cast<std::chrono::microseconds>( now.time_since_epoch() );
+              const long long unixtime = epoch.count();
+
+              // Caluculate Interpolated Azimuth
+              double interpolated = 0.0;
+              if( packet->firingData[1].rotationalPosition < packet->firingData[0].rotationalPosition ){
+                  interpolated = ( ( packet->firingData[1].rotationalPosition + 36000 ) - packet->firingData[0].rotationalPosition );
+              }
+              else{
+                  interpolated = ( packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition );
+              }
+
+              // Processing Packet
+              for( int firing_index = 0; firing_index < FIRING_PER_PKT; firing_index++ ){
+                  // Retrieve Firing Data
+                  const FiringData firing_data = packet->firingData[firing_index];
+                  for( int laser_index = 0; laser_index < LASER_PER_FIRING; laser_index++ ){
+                      // Retrieve Rotation Azimuth
+                      double azimuth = static_cast<double>( firing_data.rotationalPosition );
+                      double laser_relative_time = LASER_PER_FIRING * time_between_firings + time_half_idle* (laser_index / MAX_NUM_LASERS);
+
+                      azimuth += interpolated * laser_relative_time / time_total_cycle;
+
+                      // Reset Rotation Azimuth
+                      if( azimuth >= 36000 )
+                      {
+                          azimuth -= 36000;
+                      }
+
+                      // Complete Retrieve Capture One Rotation Data
+                      #ifndef PUSH_SINGLE_PACKETS
+                      if( last_azimuth > azimuth ){
+                          // Push One Rotation Data to Queue
+                          mutex.lock();
+                          queue.push( std::move( lasers ) );
+                          mutex.unlock();
+                          lasers.clear();
+                      }
+                      #endif
+                      #ifdef NO_EMPTY_RETURNS
+                      if( firing_data.laserReturns[laser_index].distance < EPSILON ){
+                          continue;
+                      }
+                      #endif
+                      Laser laser;
+                      laser.azimuth = azimuth / 100.0f;
+                      laser.vertical = lut[laser_index % MAX_NUM_LASERS];
+                      #ifdef USE_MILLIMETERS
+                      laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f;
+                      #else
+                      laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f / 10.0f;
+                      #endif
+                      laser.intensity = firing_data.laserReturns[laser_index].intensity;
+                      laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
+                      #ifdef HAVE_GPSTIME
+                      laser.time = packet->gpsTimestamp;
+                      #else
+                      laser.time = unixtime;
+                      #endif
+                      lasers.push_back( laser );
+                      // Update Last Rotation Azimuth
+                      last_azimuth = azimuth;
+                  }
+              }
+              #ifdef PUSH_SINGLE_PACKETS
+              // Push packet after processing
+              mutex.lock();
+              queue.push( std::move( lasers ) );
+              mutex.unlock();
+              lasers.clear();
+              #endif
+
+          };
             #ifdef HAVE_BOOST
             // Capture Thread from Sensor
             void captureSensor()
             {
-                struct timeval last_time = { 0 };
                 double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
                 unsigned char data[1500];
@@ -348,87 +437,11 @@ namespace velodyne
                         continue;
                     }
 
-                    // Retrieve Unix Time ( microseconds )
-                    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-                    const std::chrono::microseconds epoch = std::chrono::duration_cast<std::chrono::microseconds>( now.time_since_epoch() );
-                    const long long unixtime = epoch.count();
-
                     // Convert to DataPacket Structure
                     // Sensor Type 0x21 is HDL-32E, 0x22 is VLP-16
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data );
-                    assert( packet->sensorType == 0x21 || packet->sensorType == 0x22 );
+                    parseDataPacket(  packet, lasers, last_azimuth );
 
-                    // Caluculate Interpolated Azimuth
-                    double interpolated = 0.0;
-                    if( packet->firingData[1].rotationalPosition < packet->firingData[0].rotationalPosition ){
-                        interpolated = ( ( packet->firingData[1].rotationalPosition + 36000 ) - packet->firingData[0].rotationalPosition ) / 2.0;
-                    }
-                    else{
-                        interpolated = ( packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition ) / 2.0;
-                    }
-
-                    // Processing Packet
-                    for( int firing_index = 0; firing_index < FIRING_PER_PKT; firing_index++ ){
-                        // Retrieve Firing Data
-                        const FiringData firing_data = packet->firingData[firing_index];
-                        for( int laser_index = 0; laser_index < LASER_PER_FIRING; laser_index++ ){
-                            // Retrieve Rotation Azimuth
-                            double azimuth = static_cast<double>( firing_data.rotationalPosition );
-
-                            // Interpolate Rotation Azimuth
-                            if( laser_index >= MAX_NUM_LASERS )
-                            {
-                                azimuth += interpolated;
-                            }
-
-                            // Reset Rotation Azimuth
-                            if( azimuth >= 36000 )
-                            {
-                                azimuth -= 36000;
-                            }
-
-                            // Complete Retrieve Capture One Rotation Data
-                            #ifndef PUSH_SINGLE_PACKETS
-                            if( last_azimuth > azimuth ){
-                                // Push One Rotation Data to Queue
-                                mutex.lock();
-                                queue.push( std::move( lasers ) );
-                                mutex.unlock();
-                                lasers.clear();
-                            }
-                            #endif
-                            #ifdef NO_EMPTY_RETURNS
-                            if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
-                              continue;
-                            }
-                            #endif
-                            Laser laser;
-                            laser.azimuth = azimuth / 100.0f;
-                            laser.vertical = lut[laser_index % MAX_NUM_LASERS];
-                            #ifdef USE_MILLIMETERS
-                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f;
-                            #else
-                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f / 10.0f;
-                            #endif
-                            laser.intensity = firing_data.laserReturns[laser_index].intensity;
-                            laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
-                            #ifdef HAVE_GPSTIME
-                            laser.time = packet->gpsTimestamp;
-                            #else
-                            laser.time = unixtime;
-                            #endif
-                            lasers.push_back( laser );
-                            // Update Last Rotation Azimuth
-                            last_azimuth = azimuth;
-                        }
-                    }
-                    #ifdef PUSH_SINGLE_PACKETS
-                    // Push packet after processing
-                    mutex.lock();
-                    queue.push( std::move( lasers ) );
-                    mutex.unlock();
-                    lasers.clear();
-                    #endif
                 }
                 run = false;
             };
@@ -438,7 +451,6 @@ namespace velodyne
             // Capture Thread from PCAP
             void capturePCAP()
             {
-                struct timeval last_time = { 0 };
                 double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
 
@@ -465,97 +477,7 @@ namespace velodyne
                     // Convert to DataPacket Structure ( Cut Header 42 bytes )
                     // Sensor Type 0x21 is HDL-32E, 0x22 is VLP-16
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data + 42 );
-                    assert( packet->sensorType == 0x21 || packet->sensorType == 0x22 );
-
-                    // Wait This Thread Difference Time
-                    if( last_time.tv_sec == 0 )
-                    {
-                        last_time = header->ts;
-                    }
-
-                    if( last_time.tv_usec > header->ts.tv_usec )
-                    {
-                        last_time.tv_usec -= 1000000;
-                        last_time.tv_sec++;
-                    }
-
-                    const unsigned long long delay = ( ( header->ts.tv_sec - last_time.tv_sec ) * 1000000 ) + ( header->ts.tv_usec - last_time.tv_usec );
-                    #ifndef HAVE_FAST_PCAP
-                    std::this_thread::sleep_for( std::chrono::microseconds( delay ) );
-                    #endif
-                    last_time = header->ts;
-
-                    // Caluculate Interpolated Azimuth
-                    double interpolated = 0.0;
-                    if( packet->firingData[1].rotationalPosition < packet->firingData[0].rotationalPosition ){
-                        interpolated = ( ( packet->firingData[1].rotationalPosition + 36000 ) - packet->firingData[0].rotationalPosition ) / 2.0;
-                    }
-                    else{
-                        interpolated = ( packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition ) / 2.0;
-                    }
-
-                    // Processing Packet
-                    for( int firing_index = 0; firing_index < FIRING_PER_PKT; firing_index++ ){
-                        // Retrieve Firing Data
-                        const FiringData firing_data = packet->firingData[firing_index];
-                        for( int laser_index = 0; laser_index < LASER_PER_FIRING; laser_index++ ){
-                            // Retrieve Rotation Azimuth
-                            double azimuth = static_cast<double>( firing_data.rotationalPosition );
-
-                            // Interpolate Rotation Azimuth
-                            if( laser_index >= MAX_NUM_LASERS )
-                            {
-                                azimuth += interpolated;
-                            }
-
-                            // Reset Rotation Azimuth
-                            if( azimuth >= 36000 )
-                            {
-                                azimuth -= 36000;
-                            }
-
-                            // Complete Retrieve Capture One Rotation Data
-                            #ifndef PUSH_SINGLE_PACKETS
-                            if( last_azimuth > azimuth ){
-                                // Push One Rotation Data to Queue
-                                mutex.lock();
-                                queue.push( std::move( lasers ) );
-                                mutex.unlock();
-                                lasers.clear();
-                            }
-                            #endif
-                            #ifdef NO_EMPTY_RETURNS
-                            if( firing_data.laserReturns[laser_index % MAX_NUM_LASERS].distance < EPSILON ){
-                              continue;
-                            }
-                            #endif
-                            Laser laser;
-                            laser.azimuth = azimuth / 100.0f;
-                            laser.vertical = lut[laser_index % MAX_NUM_LASERS];
-                            #ifdef USE_MILLIMETERS
-                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f;
-                            #else
-                            laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f / 10.0f;
-                            #endif
-                            laser.intensity = firing_data.laserReturns[laser_index].intensity;
-                            laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
-                            #ifdef HAVE_GPSTIME
-                            laser.time = packet->gpsTimestamp;
-                            #else
-                            laser.time = unixtime;
-                            #endif
-                            lasers.push_back( laser );
-                            // Update Last Rotation Azimuth
-                            last_azimuth = azimuth;
-                        }
-                    }
-                    #ifdef PUSH_SINGLE_PACKETS
-                    // Push packet after processing
-                    mutex.lock();
-                    queue.push( std::move( lasers ) );
-                    mutex.unlock();
-                    lasers.clear();
-                    #endif
+                    parseDataPacket(packet, lasers, last_azimuth);
                 }
                 run = false;
             };
@@ -567,6 +489,9 @@ namespace velodyne
         private:
             static const int MAX_NUM_LASERS = 16;
             const std::vector<double> lut = { -15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0 };
+            const double time_between_firings = 2.304;
+            const double time_half_idle = 18.432;
+            const double time_total_cycle = 55.296*2;
 
         public:
             VLP16Capture() : VelodyneCapture()
@@ -597,6 +522,9 @@ namespace velodyne
             {
                 VelodyneCapture::MAX_NUM_LASERS = MAX_NUM_LASERS;
                 VelodyneCapture::lut = lut;
+                VelodyneCapture::time_between_firings = time_between_firings;
+                VelodyneCapture::time_half_idle = time_half_idle;
+                VelodyneCapture::time_total_cycle = time_total_cycle;
             };
     };
 
@@ -605,6 +533,9 @@ namespace velodyne
         private:
             static const int MAX_NUM_LASERS = 32;
             const std::vector<double> lut = { -30.67, -9.3299999, -29.33, -8.0, -28, -6.6700001, -26.67, -5.3299999, -25.33, -4.0, -24.0, -2.6700001, -22.67, -1.33, -21.33, 0.0, -20.0, 1.33, -18.67, 2.6700001, -17.33, 4.0, -16, 5.3299999, -14.67, 6.6700001, -13.33, 8.0, -12.0, 9.3299999, -10.67, 10.67 };
+            const double time_between_firings = 1.152;
+            const double time_half_idle = 0.0;
+            const double time_total_cycle = 46.080;
 
         public:
             HDL32ECapture() : VelodyneCapture()
@@ -635,6 +566,9 @@ namespace velodyne
             {
                 VelodyneCapture::MAX_NUM_LASERS = MAX_NUM_LASERS;
                 VelodyneCapture::lut = lut;
+                VelodyneCapture::time_between_firings = time_between_firings;
+                VelodyneCapture::time_half_idle = time_half_idle;
+                VelodyneCapture::time_total_cycle = time_total_cycle;
             };
     };
 }
