@@ -9,7 +9,9 @@
 int main( int argc, char* argv[] )
 {
     // Open VelodyneCapture that retrieve from Sensor
-    velodyne::VLP16Capture capture( "/home/e/Downloads/vlp16mrtt-000.pcap" );
+    const boost::asio::ip::address address = boost::asio::ip::address::from_string( "192.168.1.21" );
+    const unsigned short port = 2368;
+    velodyne::VLP16Capture capture( address, port );
     //velodyne::HDL32ECapture capture( address, port );
 
     /*
