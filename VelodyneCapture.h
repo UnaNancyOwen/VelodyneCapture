@@ -329,10 +329,10 @@ namespace velodyne
           void parseDataPacket( const DataPacket* packet, std::vector<Laser>& lasers, double& last_azimuth )
           {
             if( packet->sensorType != 0x21 && packet->sensorType != 0x22 ){
-                throw(std::runtime_error("This sensor is not supported"));
+                throw( std::runtime_error( "This sensor is not supported" ) );
             }
             if( packet->mode != 0x37 && packet->mode != 0x38){
-                throw(std::runtime_error("Sensor can't be set in dual return mode"));
+                throw( std::runtime_error( "Sensor can't be set in dual return mode" ) );
             }
 
               // Retrieve Unix Time ( microseconds )
@@ -340,13 +340,13 @@ namespace velodyne
               const std::chrono::microseconds epoch = std::chrono::duration_cast<std::chrono::microseconds>( now.time_since_epoch() );
               const long long unixtime = epoch.count();
 
-              // Caluculate Interpolated Azimuth
-              double interpolated = 0.0;
+              // Azimuth delta is the angle from one firing sequence to the next one
+              double azimuth_delta = 0.0;
               if( packet->firingData[1].rotationalPosition < packet->firingData[0].rotationalPosition ){
-                  interpolated = ( ( packet->firingData[1].rotationalPosition + 36000 ) - packet->firingData[0].rotationalPosition );
+                  azimuth_delta = ( ( packet->firingData[1].rotationalPosition + 36000 ) - packet->firingData[0].rotationalPosition );
               }
               else{
-                  interpolated = ( packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition );
+                  azimuth_delta = ( packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition );
               }
 
               // Processing Packet
@@ -358,7 +358,7 @@ namespace velodyne
                       double azimuth = static_cast<double>( firing_data.rotationalPosition );
                       double laser_relative_time = LASER_PER_FIRING * time_between_firings + time_half_idle* (laser_index / MAX_NUM_LASERS);
 
-                      azimuth += interpolated * laser_relative_time / time_total_cycle;
+                      azimuth += azimuth_delta * laser_relative_time / time_total_cycle;
 
                       // Reset Rotation Azimuth
                       if( azimuth >= 36000 )
@@ -535,7 +535,7 @@ namespace velodyne
             static const int MAX_NUM_LASERS = 32;
             const std::vector<double> lut = { -30.67, -9.3299999, -29.33, -8.0, -28, -6.6700001, -26.67, -5.3299999, -25.33, -4.0, -24.0, -2.6700001, -22.67, -1.33, -21.33, 0.0, -20.0, 1.33, -18.67, 2.6700001, -17.33, 4.0, -16, 5.3299999, -14.67, 6.6700001, -13.33, 8.0, -12.0, 9.3299999, -10.67, 10.67 };
             const double time_between_firings = 1.152;
-            const double time_half_idle = 0.0;
+            const double time_half_idle = 0.0; //All the firings are consecutive
             const double time_total_cycle = 46.080;
 
         public:
