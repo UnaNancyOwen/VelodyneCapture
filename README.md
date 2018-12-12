@@ -9,7 +9,7 @@ This class supports direct capture form Velodyne sensors, or capture from PCAP f
 
 Environment
 -----------
-If direct capture from sensors is desired, VelodyneCapture are requires Boost.Asio and its dependent libraries ( Boost.System, Boost.Date_Time, Boost.Regex ).  
+If direct capture from sensors is desired, VelodyneCapture requires Boost.Asio and its dependent libraries ( Boost.System, Boost.Date_Time, Boost.Regex ).  
 Please define <code>HAVE_BOOST</code> in preprocessor.  
 * Boost.Asio  
 
