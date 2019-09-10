@@ -82,7 +82,7 @@ namespace velodyne
             std::mutex mutex;
             std::queue<std::vector<Laser>> queue;
 
-            int MAX_NUM_LASERS;
+            int max_num_lasers;
             std::vector<double> lut;
             double time_between_firings;
             double time_half_idle;
@@ -356,7 +356,7 @@ namespace velodyne
                   for( int laser_index = 0; laser_index < LASER_PER_FIRING; laser_index++ ){
                       // Retrieve Rotation Azimuth
                       double azimuth = static_cast<double>( firing_data.rotationalPosition );
-                      double laser_relative_time = LASER_PER_FIRING * time_between_firings + time_half_idle* (laser_index / MAX_NUM_LASERS);
+                      double laser_relative_time = LASER_PER_FIRING * time_between_firings + time_half_idle* (laser_index / max_num_lasers);
 
                       azimuth += azimuth_delta * laser_relative_time / time_total_cycle;
 
@@ -383,14 +383,14 @@ namespace velodyne
                       #endif
                       Laser laser;
                       laser.azimuth = azimuth / 100.0f;
-                      laser.vertical = lut[laser_index % MAX_NUM_LASERS];
+                      laser.vertical = lut[laser_index % max_num_lasers];
                       #ifdef USE_MILLIMETERS
                       laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f;
                       #else
                       laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f / 10.0f;
                       #endif
                       laser.intensity = firing_data.laserReturns[laser_index].intensity;
-                      laser.id = static_cast<unsigned char>( laser_index % MAX_NUM_LASERS );
+                      laser.id = static_cast<unsigned char>( laser_index % max_num_lasers );
                       #ifdef HAVE_GPSTIME
                       laser.time = packet->gpsTimestamp + static_cast<long long>( laser_relative_time );
                       #else
@@ -487,13 +487,6 @@ namespace velodyne
 
     class VLP16Capture : public VelodyneCapture
     {
-        private:
-            static const int MAX_NUM_LASERS = 16;
-            const std::vector<double> lut = { -15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0 };
-            const double time_between_firings = 2.304;
-            const double time_half_idle = 18.432;
-            const double time_total_cycle = 55.296*2;
-
         public:
             VLP16Capture() : VelodyneCapture()
             {
@@ -501,16 +494,18 @@ namespace velodyne
             };
 
             #ifdef HAVE_BOOST
-            VLP16Capture( const boost::asio::ip::address& address, const unsigned short port = 2368 ) : VelodyneCapture( address, port )
+            VLP16Capture( const boost::asio::ip::address& address, const unsigned short port = 2368 ) : VelodyneCapture()
             {
                 initialize();
+                open( address, port );
             };
             #endif
 
             #ifdef HAVE_PCAP
-            VLP16Capture( const std::string& filename ) : VelodyneCapture( filename )
+            VLP16Capture( const std::string& filename ) : VelodyneCapture()
             {
                 initialize();
+                open( filename );
             };
             #endif
 
@@ -521,23 +516,16 @@ namespace velodyne
         private:
             void initialize()
             {
-                VelodyneCapture::MAX_NUM_LASERS = MAX_NUM_LASERS;
-                VelodyneCapture::lut = lut;
-                VelodyneCapture::time_between_firings = time_between_firings;
-                VelodyneCapture::time_half_idle = time_half_idle;
-                VelodyneCapture::time_total_cycle = time_total_cycle;
+                max_num_lasers       = 16;
+                lut                  = { -15.0, 1.0, -13.0, 3.0, -11.0, 5.0, -9.0, 7.0, -7.0, 9.0, -5.0, 11.0, -3.0, 13.0, -1.0, 15.0 };
+                time_between_firings = 2.304;
+                time_half_idle       = 18.432;
+                time_total_cycle     = 110.592; // 55.296*2;
             };
     };
 
     class HDL32ECapture : public VelodyneCapture
     {
-        private:
-            static const int MAX_NUM_LASERS = 32;
-            const std::vector<double> lut = { -30.67, -9.3299999, -29.33, -8.0, -28, -6.6700001, -26.67, -5.3299999, -25.33, -4.0, -24.0, -2.6700001, -22.67, -1.33, -21.33, 0.0, -20.0, 1.33, -18.67, 2.6700001, -17.33, 4.0, -16, 5.3299999, -14.67, 6.6700001, -13.33, 8.0, -12.0, 9.3299999, -10.67, 10.67 };
-            const double time_between_firings = 1.152;
-            const double time_half_idle = 0.0; //All the firings are consecutive
-            const double time_total_cycle = 46.080;
-
         public:
             HDL32ECapture() : VelodyneCapture()
             {
@@ -545,16 +533,18 @@ namespace velodyne
             };
 
             #ifdef HAVE_BOOST
-            HDL32ECapture( const boost::asio::ip::address& address, const unsigned short port = 2368 ) : VelodyneCapture( address, port )
+            HDL32ECapture( const boost::asio::ip::address& address, const unsigned short port = 2368 ) : VelodyneCapture()
             {
                 initialize();
+                open( address, port );
             };
             #endif
 
             #ifdef HAVE_PCAP
-            HDL32ECapture( const std::string& filename ) : VelodyneCapture( filename )
+            HDL32ECapture( const std::string& filename ) : VelodyneCapture()
             {
                 initialize();
+                open( filename );
             };
             #endif
 
@@ -565,11 +555,12 @@ namespace velodyne
         private:
             void initialize()
             {
-                VelodyneCapture::MAX_NUM_LASERS = MAX_NUM_LASERS;
-                VelodyneCapture::lut = lut;
-                VelodyneCapture::time_between_firings = time_between_firings;
-                VelodyneCapture::time_half_idle = time_half_idle;
-                VelodyneCapture::time_total_cycle = time_total_cycle;
+                max_num_lasers       = 32;
+                lut                  = { -30.67, -9.3299999, -29.33, -8.0, -28, -6.6700001, -26.67, -5.3299999, -25.33, -4.0, -24.0, -2.6700001, -22.67, -1.33, -21.33,
+                                        0.0, -20.0, 1.33, -18.67, 2.6700001, -17.33, 4.0, -16, 5.3299999, -14.67, 6.6700001, -13.33, 8.0, -12.0, 9.3299999, -10.67, 10.67 };
+                time_between_firings = 1.152;
+                time_half_idle       = 0.0;
+                time_total_cycle     = 46.080; 
             };
     };
 }
