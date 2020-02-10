@@ -356,7 +356,7 @@ namespace velodyne
                   for( int laser_index = 0; laser_index < LASER_PER_FIRING; laser_index++ ){
                       // Retrieve Rotation Azimuth
                       double azimuth = static_cast<double>( firing_data.rotationalPosition );
-                      double laser_relative_time = LASER_PER_FIRING * time_between_firings + time_half_idle* (laser_index / max_num_lasers);
+                      double laser_relative_time = laser_index * time_between_firings + time_half_idle* (laser_index / max_num_lasers);
 
                       azimuth += azimuth_delta * laser_relative_time / time_total_cycle;
 
@@ -472,7 +472,7 @@ namespace velodyne
 
                     // Retrieve Unix Time ( microseconds )
                     std::stringstream ss;
-                    ss << header->ts.tv_sec << std::setw( 6 ) << std::left << std::setfill( '0' ) << header->ts.tv_usec;
+                    ss << header->ts.tv_sec << std::setw( 6 ) << std::right << std::setfill( '0' ) << header->ts.tv_usec;
                     const long long unixtime = std::stoll( ss.str() );
 
                     // Convert to DataPacket Structure ( Cut Header 42 bytes )
