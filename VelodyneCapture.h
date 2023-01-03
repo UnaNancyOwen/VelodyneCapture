@@ -51,6 +51,7 @@ namespace velodyne
         unsigned char intensity;
         unsigned char id;
         long long time;
+        long long packetTime;
 
         const bool operator < ( const struct Laser& laser ){
             if( azimuth == laser.azimuth ){
@@ -81,6 +82,7 @@ namespace velodyne
             std::atomic_bool run = { false };
             std::mutex mutex;
             std::queue<std::vector<Laser>> queue;
+            uint16_t prevRotationalPosition;
 
             int max_num_lasers;
             std::vector<double> lut;
@@ -122,6 +124,7 @@ namespace velodyne
             // Constructor
             VelodyneCapture()
             {
+                prevRotationalPosition = 0;
             };
 
             #ifdef HAVE_BOOST
@@ -326,7 +329,15 @@ namespace velodyne
             }
 
         private:
-          void parseDataPacket( const DataPacket* packet, std::vector<Laser>& lasers, double& last_azimuth )
+            long long retrieveUnixTime()
+            {
+                // Retrieve Unix Time ( microseconds )
+                const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+                const std::chrono::microseconds epoch = std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch());
+                return epoch.count();
+            }
+
+          void parseDataPacket( const DataPacket* packet, std::vector<Laser>& lasers, const long long &packetUnixtime)
           {
             if( packet->sensorType != 0x21 && packet->sensorType != 0x22 ){
                 throw( std::runtime_error( "This sensor is not supported" ) );
@@ -334,19 +345,16 @@ namespace velodyne
             if( packet->mode != 0x37 && packet->mode != 0x38){
                 throw( std::runtime_error( "Sensor can't be set in dual return mode" ) );
             }
-
-              // Retrieve Unix Time ( microseconds )
-              const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-              const std::chrono::microseconds epoch = std::chrono::duration_cast<std::chrono::microseconds>( now.time_since_epoch() );
-              const long long unixtime = epoch.count();
+                                        
+              const long long unixtime = retrieveUnixTime();
 
               // Azimuth delta is the angle from one firing sequence to the next one
               double azimuth_delta = 0.0;
               if( packet->firingData[1].rotationalPosition < packet->firingData[0].rotationalPosition ){
-                  azimuth_delta = ( ( packet->firingData[1].rotationalPosition + 36000 ) - packet->firingData[0].rotationalPosition );
+                  azimuth_delta = (double)packet->firingData[1].rotationalPosition + 36000 - (double)packet->firingData[0].rotationalPosition;
               }
               else{
-                  azimuth_delta = ( packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition );
+                  azimuth_delta = (packet->firingData[1].rotationalPosition - packet->firingData[0].rotationalPosition);
               }
 
               // Processing Packet
@@ -355,25 +363,24 @@ namespace velodyne
                   const FiringData firing_data = packet->firingData[firing_index];
                   for( int laser_index = 0; laser_index < LASER_PER_FIRING; laser_index++ ){
                       // Retrieve Rotation Azimuth
-                      double azimuth = static_cast<double>( firing_data.rotationalPosition );
                       double laser_relative_time = laser_index * time_between_firings + time_half_idle* (laser_index / max_num_lasers);
-
-                      azimuth += azimuth_delta * laser_relative_time / time_total_cycle;
-
+                      double azimuth = static_cast<double>(firing_data.rotationalPosition) + azimuth_delta * laser_relative_time / time_total_cycle;
+                      laser_relative_time += firing_index * time_total_cycle;
                       // Reset Rotation Azimuth
-                      if( azimuth >= 36000 )
+                      while( azimuth >= 36000 )
                       {
                           azimuth -= 36000;
                       }
 
                       // Complete Retrieve Capture One Rotation Data
                       #ifndef PUSH_SINGLE_PACKETS
-                      if( last_azimuth > azimuth ){
+                      if(prevRotationalPosition > firing_data.rotationalPosition){
                           // Push One Rotation Data to Queue
                           mutex.lock();
                           queue.push( std::move( lasers ) );
                           mutex.unlock();
                           lasers.clear();
+                          prevRotationalPosition = firing_data.rotationalPosition;
                       }
                       #endif
                       #ifdef NO_EMPTY_RETURNS
@@ -390,16 +397,16 @@ namespace velodyne
                       laser.distance = static_cast<float>( firing_data.laserReturns[laser_index].distance ) * 2.0f / 10.0f;
                       #endif
                       laser.intensity = firing_data.laserReturns[laser_index].intensity;
-                      laser.id = static_cast<unsigned char>( laser_index % max_num_lasers );
+                      laser.id = static_cast<unsigned char>(laser_index % max_num_lasers);
                       #ifdef HAVE_GPSTIME
-                      laser.time = packet->gpsTimestamp + static_cast<long long>( laser_relative_time );
+                      laser.time = packet->gpsTimestamp + static_cast<long long>(laser_relative_time);
                       #else
-                      laser.time = unixtime + static_cast<long long>( laser_relative_time );
+                      laser.time = unixtime + static_cast<long long>(laser_relative_time);
                       #endif
-                      lasers.push_back( laser );
-                      // Update Last Rotation Azimuth
-                      last_azimuth = azimuth;
+                      laser.packetTime = packetUnixtime + static_cast<long long>(laser_relative_time);
+                      lasers.push_back(laser);
                   }
+                  prevRotationalPosition = firing_data.rotationalPosition;
               }
               #ifdef PUSH_SINGLE_PACKETS
               // Push packet after processing
@@ -414,7 +421,6 @@ namespace velodyne
             // Capture Thread from Sensor
             void captureSensor()
             {
-                double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
                 unsigned char data[1500];
                 boost::asio::ip::udp::endpoint sender;
@@ -441,7 +447,7 @@ namespace velodyne
                     // Convert to DataPacket Structure
                     // Sensor Type 0x21 is HDL-32E, 0x22 is VLP-16
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data );
-                    parseDataPacket(  packet, lasers, last_azimuth );
+                    parseDataPacket( packet, lasers, retrieveUnixTime());
 
                 }
                 run = false;
@@ -452,7 +458,6 @@ namespace velodyne
             // Capture Thread from PCAP
             void capturePCAP()
             {
-                double last_azimuth = 0.0;
                 std::vector<Laser> lasers;
 
                 while( run ){
@@ -478,7 +483,7 @@ namespace velodyne
                     // Convert to DataPacket Structure ( Cut Header 42 bytes )
                     // Sensor Type 0x21 is HDL-32E, 0x22 is VLP-16
                     const DataPacket* packet = reinterpret_cast<const DataPacket*>( data + 42 );
-                    parseDataPacket(packet, lasers, last_azimuth);
+                    parseDataPacket(packet, lasers, unixtime);
                 }
                 run = false;
             };
