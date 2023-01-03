@@ -365,7 +365,7 @@ namespace velodyne
                       // Retrieve Rotation Azimuth
                       double laser_relative_time = laser_index * time_between_firings + time_half_idle* (laser_index / max_num_lasers);
                       double azimuth = static_cast<double>(firing_data.rotationalPosition) + azimuth_delta * laser_relative_time / time_total_cycle;
-					  laser_relative_time +=firing_index * time_total_cycle;
+                      laser_relative_time += firing_index * time_total_cycle;
                       // Reset Rotation Azimuth
                       while( azimuth >= 36000 )
                       {
